@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "402879309111",
+    "project_id": "juberdelivery-01",
+    "storage_bucket": "juberdelivery-01.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:402879309111:android:73793e3582cb63f156e6b2",
+        "android_client_info": {
+          "package_name": "com.juber"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "402879309111-gteh8i4mcnjl6ajvhs645qt1tmv7v49i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPcE7PwBkWzrjKG_QwREr6_ELDNbDKT8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "402879309111-gteh8i4mcnjl6ajvhs645qt1tmv7v49i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
