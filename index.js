@@ -172,15 +172,23 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('driverLocation', function (data) {
+        var id = data._id;
+        if (clients.hasOwnProperty(id)) {
+            io.to(clients[id]['id']).emit('driverLocation', data);
+        } else {
+            console.log('target offline')
+        }
+    })
     socket.on('broadcastdriver', function (data) {
         // console.log(data);
-        let dataPesan = buatData('',"Order baru","Anda memiliki satu order baru",'',data,"driver");
+        let dataPesan = buatData('', "Order baru", "Anda memiliki satu order baru", '', data, "driver");
         console.log(dataPesan);
         sendFcmMessage(dataPesan);
     });
     socket.on('acceptorder', function (data) {
         // console.log(data);
-        let dataPesan = buatData(data.token,"Driver baru","Anda sudah dapat driver silahkan tunggu",'',data,"");
+        let dataPesan = buatData(data.token, "Driver baru", "Anda sudah dapat driver silahkan tunggu", '', data, "");
         console.log(dataPesan);
         sendFcmMessage(dataPesan);
     });
@@ -190,8 +198,8 @@ io.on('connection', (socket) => {
         let index = clients.indexOf(socket.nickname);
         clients.splice(index, 1);
     });
-    socket.on("test",(data)=>{
-        socket.emit("test",data);
+    socket.on("test", (data) => {
+        socket.emit("test", data);
         // console.log(data);
     })
 });
