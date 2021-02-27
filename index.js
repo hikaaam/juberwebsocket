@@ -121,12 +121,16 @@ function buatData(token, title, body, image, data_, topic) {
     }
     return data;
 }
-var data = {
-    halo: "asdsad",
-    asdsadsa: "asdsada"
-}
-let token = 'dTL8kuwbTQOChvmMbJbO5Z:APA91bGXk-4T2sfoN5IDmwducJtAHYQU2J2T2UcOnpVnSIKl2SjB0P4bBDzCpu-M2DtfyjE6jeYJs9Ef2xCSpLf4YtPRflNkTZg0C-d-Cn5zkETsTTCCUxy8AHQLqd8gVWPqwkYOTViH';
-// sendFcmMessage(buatData(token,'judul','isinya','',data))
+
+// contoh ngirim notifikasi =>>
+// var dataParameter = {
+//     halo: "asdsad",
+//     param1: "asdsada"
+// }
+// let token = 'dTL8kuwbTQOChvmMbJbO5Z:APA91bGXk-4T2sfoN5IDmwducJtAHYQU2J2T2UcOnpVnSIKl2SjB0P4bBDzCpu-M2DtfyjE6jeYJs9Ef2xCSpLf4YtPRflNkTZg0C-d-Cn5zkETsTTCCUxy8AHQLqd8gVWPqwkYOTViH';
+// let dataPesan = buatData('', "Order baru", "Anda memiliki satu order baru", 'https://variety.com/wp-content/uploads/2020/08/patrick-star-image.jpg', dataParameter, "driver");
+// console.log(dataPesan);
+// sendFcmMessage(dataPesan);
 
 app.use(bodyParser.urlencoded({
     extended: true
