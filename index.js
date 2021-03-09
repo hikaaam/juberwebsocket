@@ -165,11 +165,11 @@ io.on("connection", (socket) => {
               status: "read",
               message: data.message,
             });
-            unread[data][key].splice(i,1);
+            unread[data][key].splice(i, 1);
           });
         }
       }
-    }else{
+    } else {
       console.log(unread);
     }
   }
@@ -184,16 +184,16 @@ io.on("connection", (socket) => {
       socket.nickname = data;
       clients[socket.nickname] = socket;
       console.log('u are here bro');
-      
+
     } else {
       console.log(unread);
       socket.nickname = data;
       clients[socket.nickname] = socket;
     }
-    offlineHandling(data) 
+    offlineHandling(data)
     console.log("new user : " + socket.nickname);
   });
- 
+
   socket.on("chat", function (data) {
     var id = data.idrs;
     var senderIdrs = data.senderIdrs;
@@ -213,10 +213,16 @@ io.on("connection", (socket) => {
           console.log('sup bro');
         } else {
           unread[id] = { ...unread[id], [senderIdrs]: [data] };
+          if (data.token !== undefined) {
+            sendFcmMessage(data.token, 'Pesan Baru', 'Anda punya notifikasi pesan baru', '', '');
+          }
           console.log('data not there yet');
         }
       } else {
         unread[id] = { [senderIdrs]: [data] };
+        if (data.token !== undefined) {
+          sendFcmMessage(data.token, 'Pesan Baru', 'Anda punya notifikasi pesan baru', '', '');
+        }
         console.log('not there yet');
       }
     }
@@ -276,6 +282,6 @@ io.on("connection", (socket) => {
   });
 });
 
-http.listen(4000, () => {
-  console.log("listening on *:4000");
+http.listen(8002, () => {
+  console.log("listening on *:8002");
 });
