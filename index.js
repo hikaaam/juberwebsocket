@@ -119,13 +119,26 @@ function buatData(token, title, body, image, data_, topic) {
   }
   return data;
 }
-
+const sendMultipe = (tokens, data) => {
+  tokens.map((item) => {
+    let dataPesan = buatData(
+      item,
+      data.title,
+      data.message,
+      data.picture,
+      data.data,
+      ""
+    );
+    sendFcmMessage(dataPesan);
+  });
+};
 // contoh ngirim notifikasi =>>
 
 // var dataParameter = {
-//     halo: "asdsad",
-//     param1: "asdsada"
-// }
+//   halo: "asdsad",
+//   param1: "asdsada",
+// };
+
 // let token = 'dTL8kuwbTQOChvmMbJbO5Z:APA91bGXk-4T2sfoN5IDmwducJtAHYQU2J2T2UcOnpVnSIKl2SjB0P4bBDzCpu-M2DtfyjE6jeYJs9Ef2xCSpLf4YtPRflNkTZg0C-d-Cn5zkETsTTCCUxy8AHQLqd8gVWPqwkYOTViH';
 // let dataPesan = buatData('', "Order baru", "Anda memiliki satu order baru", 'https://variety.com/wp-content/uploads/2020/08/patrick-star-image.jpg', dataParameter, "driver");
 // console.log(dataPesan);
@@ -137,9 +150,25 @@ app.use(
   })
 );
 app.use(bodyParser.json());
-app.get("/", router);
+app.all("/", router);
+app.all("/sendto/driver", router);
 router.get("/", (req, res) => {
   res.send("hello world");
+});
+router.post("/sendto/driver", (req, res) => {
+  data = req.body;
+  try {
+    sendMultipe(data.tokens, {
+      title: "order baru",
+      message:
+        "Anda memiliki orderan baru\nsilahkan klik notifikasi dan accept order jika ingin menerima order ini",
+      picture: "",
+      data: data.data,
+    });
+    res.send(true);
+  } catch (error) {
+    res.send(false);
+  }
 });
 
 process.on("uncaughtException", function (ex) {
@@ -147,8 +176,6 @@ process.on("uncaughtException", function (ex) {
 });
 var clients = [];
 var unread = [];
-
-
 
 io.on("connection", (socket) => {
   const offlineHandling = (data) => {
@@ -160,7 +187,7 @@ io.on("connection", (socket) => {
           // console.log(item);
           item.map((datas, i) => {
             io.to(clients[datas.idrs]["id"]).emit("chat", datas);
-            console.log('emited');
+            console.log("emited");
             io.to(clients[datas.senderIdrs]["id"]).emit("read", {
               status: "read",
               message: data.message,
@@ -172,7 +199,7 @@ io.on("connection", (socket) => {
     } else {
       console.log(unread);
     }
-  }
+  };
   console.log("new user connected");
   socket.on("new user", function (data) {
     // console.log(clients[data])
@@ -183,14 +210,13 @@ io.on("connection", (socket) => {
       }
       socket.nickname = data;
       clients[socket.nickname] = socket;
-      console.log('u are here bro');
-
+      console.log("u are here bro");
     } else {
       console.log(unread);
       socket.nickname = data;
       clients[socket.nickname] = socket;
     }
-    offlineHandling(data)
+    offlineHandling(data);
     console.log("new user : " + socket.nickname);
   });
 
@@ -210,20 +236,32 @@ io.on("connection", (socket) => {
       if (unread.hasOwnProperty(id)) {
         if (unread[id].hasOwnProperty(senderIdrs)) {
           unread[id][senderIdrs].push(data);
-          console.log('sup bro');
+          console.log("sup bro");
         } else {
           unread[id] = { ...unread[id], [senderIdrs]: [data] };
           if (data.token !== undefined) {
-            sendFcmMessage(data.token, 'Pesan Baru', 'Anda punya notifikasi pesan baru', '', '');
+            sendFcmMessage(
+              data.token,
+              "Pesan Baru",
+              "Anda punya notifikasi pesan baru",
+              "",
+              ""
+            );
           }
-          console.log('data not there yet');
+          console.log("data not there yet");
         }
       } else {
         unread[id] = { [senderIdrs]: [data] };
         if (data.token !== undefined) {
-          sendFcmMessage(data.token, 'Pesan Baru', 'Anda punya notifikasi pesan baru', '', '');
+          sendFcmMessage(
+            data.token,
+            "Pesan Baru",
+            "Anda punya notifikasi pesan baru",
+            "",
+            ""
+          );
         }
-        console.log('not there yet');
+        console.log("not there yet");
       }
     }
   });
@@ -259,6 +297,26 @@ io.on("connection", (socket) => {
     );
     console.log(dataPesan);
     sendFcmMessage(dataPesan);
+  });
+  socket.on("getDriver", function (data) {
+    // console.log(data);
+    // let dataPesan = buatData(
+    //   data.token,
+    //   "Order baru",
+    //   "Anda memiliki satu order baru",
+    //   "",
+    //   data.data,
+    //   ""
+    // );
+    // console.log(dataPesan);
+    // sendFcmMessage(dataPesan);
+    sendMultipe(data.tokens, {
+      title: "order baru",
+      message:
+        "Anda memiliki orderan baru\nsilahkan klik notifikasi dan accept order jika ingin menerima order ini",
+      picture: "",
+      data: data.data,
+    });
   });
   socket.on("acceptorder", function (data) {
     // console.log(data);
