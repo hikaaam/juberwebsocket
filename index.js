@@ -3,12 +3,13 @@ const router = require("express").Router();
 const https = require("https");
 const fs = require("fs");
 var ssl_op = {
-  key: fs.readFileSync('./ssl_config/server.key'),
-  cert: fs.readFileSync('./ssl_config/server.crt'),
-  ca: fs.readFileSync('./ssl_config/ca.crt')
-}
-const http = https.createServer(ssl_op, app);
-const Logger = require('./middleware/Logger');
+  key: fs.readFileSync("./ssl_config/server.key"),
+  cert: fs.readFileSync("./ssl_config/server.crt"),
+  ca: fs.readFileSync("./ssl_config/ca.crt"),
+};
+// const http = https.createServer(ssl_op, app);
+const http = require("http").createServer(app);
+const Logger = require("./middleware/Logger");
 const io = require("socket.io")(http, {
   cors: {
     origin: "*",
@@ -48,8 +49,8 @@ function getAccessToken() {
 }
 
 async function sendFcmMessage(fcmMessage) {
-  let accessToken = await getAccessToken()
-  return new Promise(resolve => {
+  let accessToken = await getAccessToken();
+  return new Promise((resolve) => {
     let obj = {};
     var options = {
       hostname: HOST,
@@ -69,33 +70,33 @@ async function sendFcmMessage(fcmMessage) {
         let data = JSON.parse(data_);
         if (data.error == undefined) {
           respon_ = {
-            "success": true
-          }
+            success: true,
+          };
         } else {
           respon_ = {
-            "success": false,
-            "code": data.error.code,
-            "errMsg": data.error.message,
-            "status": data.error.status,
-            "details": data.error.details
-          }
+            success: false,
+            code: data.error.code,
+            errMsg: data.error.message,
+            status: data.error.status,
+            details: data.error.details,
+          };
         }
         // console.log(respon_);
       });
       resp.on("end", function () {
         obj = respon_;
-        resolve(obj)
-      })
-    }
+        resolve(obj);
+      });
+    };
     var request = https.request(options, callback);
     request.on("error", function (err) {
       console.log("Unable to send message to Firebase");
       console.log(err);
       respon_ = {
-        "success": false,
-        "msg": err.message,
-      }
-      resolve(respon_)
+        success: false,
+        msg: err.message,
+      };
+      resolve(respon_);
       return err;
     });
     request.write(JSON.stringify(fcmMessage));
@@ -103,7 +104,7 @@ async function sendFcmMessage(fcmMessage) {
   });
 }
 const sendMultipe = (tokens, data) => {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     tokens.map(async (item) => {
       let dataPesan = buatData(
         item,
@@ -115,9 +116,22 @@ const sendMultipe = (tokens, data) => {
       );
       const resp = await sendFcmMessage(dataPesan);
       console.log(resp);
-      resolve(resp)
-    })
-  })
+      resolve(resp);
+    });
+  });
+};
+const sendTopic = async (data) => {
+  let dataPesan = buatData(
+    null,
+    data.judul,
+    data.msg,
+    data.picture,
+    data.data,
+    data.topic
+  );
+  const resp = await sendFcmMessage(dataPesan);
+  console.log(resp);
+  return resp;
 };
 // contoh ngirim notifikasi =>>
 
@@ -141,10 +155,12 @@ app.use(bodyParser.json());
 app.all("/", router);
 app.all("/sendto/driver", router);
 app.all("/notif", router);
+app.all("/notif/topic", router);
 app.all("/dummyToken", router);
 router.get("/", (req, res) => {
   res.send("hello world");
 });
+
 router.post("/sendto/driver", (req, res) => {
   data = req.body;
   console.log(data);
@@ -161,66 +177,87 @@ router.post("/sendto/driver", (req, res) => {
     res.send(false);
   }
 });
+router.post("/notif/topic", async (req, res) => {
+  try {
+    let data = req.body;
+    if (!data.judul) {
+      throw new Error("judul is required!");
+    }
+    if (!data.msg) {
+      throw new Error("msg is required!");
+    }
+    if (!data.data) {
+      throw new Error("data is required!");
+    }
+    if (!data.topic) {
+      throw new Error("topic is required!");
+    }
+    if (!data.picture) {
+      data.picture = "";
+    }
+    let resp = await sendTopic(data);
+    res.send(resp);
+  } catch (error) {
+    res.status(400).send({
+      success: false,
+      errMsg: error.message,
+    });
+  }
+});
 router.post("/notif", async (req, res) => {
-
   data = req.body;
-  console.log(data)
+  console.log(data);
   // console.log(data.data.type)
   if (data.judul == undefined) {
     res.status(401).send({
-      "success": false,
-      "errMsg": "judul harus di isi"
-    })
+      success: false,
+      errMsg: "judul harus di isi",
+    });
     return;
-  }
-  else if (data.msg == undefined) {
+  } else if (data.msg == undefined) {
     res.status(401).send({
-      "success": false,
-      "errMsg": "msg harus di isi"
-    })
+      success: false,
+      errMsg: "msg harus di isi",
+    });
     return;
-  }
-  else if (data.data == undefined) {
+  } else if (data.data == undefined) {
     res.status(401).send({
-      "success": false,
-      "errMsg": "data harus di isi"
-    })
+      success: false,
+      errMsg: "data harus di isi",
+    });
     return;
-  }
-  else if (data.data.type == undefined) {
+  } else if (data.data.type == undefined) {
     res.status(401).send({
-      "success": false,
-      "errMsg": "data.type harus di isi"
-    })
+      success: false,
+      errMsg: "data.type harus di isi",
+    });
     return;
-  }
-  else if (data.data.service == undefined) {
+  } else if (data.data.service == undefined) {
     res.status(401).send({
-      "success": false,
-      "errMsg": "data.service harus di isi"
-    })
+      success: false,
+      errMsg: "data.service harus di isi",
+    });
     return;
   }
-  if (data.data.service == 'FOOD') {
-    data.data.service = 'foodish'
+  if (data.data.service == "FOOD") {
+    data.data.service = "foodish";
   }
   try {
     let resp = await sendMultipe(data.tokens, {
       title: data.judul,
-      message:
-        data.msg,
+      message: data.msg,
       picture: "",
       data: data.data,
     });
     if (!resp.success) {
       res.status(500).json(resp);
-      return
+      return;
     }
     res.send(resp);
   } catch (error) {
     res.status(500).send({
-      "success": false,
-      "errMsg": error
+      success: false,
+      errMsg: error,
     });
   }
 });
@@ -232,10 +269,10 @@ router.get("/dummyToken", (req, res) => {
       data: {
         code: "200",
         msg: "succes",
-        lobj: data_dummy
-      }
-    }
-    res.send(data)
+        lobj: data_dummy,
+      },
+    };
+    res.send(data);
   } catch (error) {
     res.send(false);
   }
@@ -300,12 +337,12 @@ io.on("connection", (socket) => {
           ""
         );
         console.log(msg_);
-        sendFcmMessage(msg_)
+        sendFcmMessage(msg_);
       }
-    }
+    };
     var id = data.idrs;
     var senderIdrs = data.senderIdrs;
-    data = { ...data, time: moment(), type: "chat" }
+    data = { ...data, time: moment(), type: "chat" };
     console.log(senderIdrs);
     console.log(id);
     if (clients.hasOwnProperty(senderIdrs)) {
@@ -326,7 +363,6 @@ io.on("connection", (socket) => {
             console.log("pesan masuk ke cache");
           }
           unread[senderIdrs][id].push(data);
-
         } else {
           unread[senderIdrs] = { ...unread[senderIdrs], [id]: [data] };
           chatNotif(data);
@@ -354,18 +390,18 @@ io.on("connection", (socket) => {
   socket.on("driverLocation", function (data) {
     var id = data._id;
     if (clients.hasOwnProperty(id)) {
-      slog(data)
+      slog(data);
       io.to(clients[id]["id"]).emit("driverLocation", data);
     } else {
-      slogf(data)
+      slogf(data);
       console.log("target offline");
     }
   });
   socket.on("broadcastdriver", function (data) {
     // console.log(data);
-    slog(data)
+    slog(data);
     // socket.emit("broadcastdriver", data);
-    socket.broadcast.emit("broadcastdriver", data)
+    socket.broadcast.emit("broadcastdriver", data);
     // io.emit("broadcastdriver", data)
   });
   socket.on("getDriver", function (data) {
@@ -405,9 +441,7 @@ io.on("connection", (socket) => {
     delete clients[data];
     // console.log(clients);
   });
-
 });
-
 
 function buatData(token, title, body, image, data_, topic, badge) {
   if (topic.length > 0) {
@@ -463,15 +497,16 @@ function buatData(token, title, body, image, data_, topic, badge) {
   }
 
   data = {
-    ...data, message: {
+    ...data,
+    message: {
       ...data.message,
-      "android": {
-        "notification": {
-          "sound": "default"
-        }
-      }
-    }
-  }
+      android: {
+        notification: {
+          sound: "default",
+        },
+      },
+    },
+  };
   return data;
 }
 
@@ -479,79 +514,81 @@ http.listen(8002, () => {
   console.log("listening on *:8002");
 });
 
-const data_dummy = [{
-  "idTrx": "TRXJF0300080",
-  "stsTrx": "PROSES",
-  "timestamp": "2021-03-23T10:36:22.000+0000",
-  "kodepesanan": "JBF0300080",
-  "merchant": "fena toko",
-  "alamat": "jl. tegalsari tea",
-  "tgl": "23",
-  "bulan": "Mar",
-  "totalPembelian": 16000,
-  "totalItem": 1,
-  "sts": 1,
-  "trx": {
-    "id": "TRXJF0300080",
-    "alamatAntar": "Kudaile, 52413, Slawi, Tegal, Central Java, Indonesia",
-    "comment": null,
-    "detailAntar": "",
-    "job": "DRIVER OTW MERCHANT",
-    "ketPesanan": "",
-    "kodepesanan": "JBF0300080",
-    "latAntar": "-6.975225",
-    "lonAntar": "109.1291609",
-    "notif": 0,
-    "star": 0,
-    "status": "PROSES",
-    "ongkir": 5000,
-    "pajak": 0,
-    "total": 11000,
-    "grandtotal": 16000,
-    "id_driver": "sim-123871238123123",
-    "pembeli": "1614337831601",
-    "promo": null,
-    "merchant": "mc0002",
-    "pin": null,
-    "timestamp": "2021-03-23T10:36:22.000+0000",
-    "latAsal": "-6.8572739",
-    "lonAsal": null,
-    "alamatAsal": null,
-    "keterangan": null,
-    "type": "FOOD",
-    "idlayanan": null
-  },
-  "detil": [
-    {
-      "idtrxdetil": "161649578170731601",
-      "harga": 11000,
-      "idxtra": null,
-      "hargaxtra": 0,
-      "jumlah": 1,
-      "star": null,
-      "total": 0,
-      "totalsetelahpajak": 0,
-      "idbarang": "10045",
-      "nmBarang": "10045",
-      "idtrx": "TRXJF0300080"
-    }
-  ],
-  "stsJob": [
-    {
-      "iconName": "done-all",
-      "jobName": "order_placed"
+const data_dummy = [
+  {
+    idTrx: "TRXJF0300080",
+    stsTrx: "PROSES",
+    timestamp: "2021-03-23T10:36:22.000+0000",
+    kodepesanan: "JBF0300080",
+    merchant: "fena toko",
+    alamat: "jl. tegalsari tea",
+    tgl: "23",
+    bulan: "Mar",
+    totalPembelian: 16000,
+    totalItem: 1,
+    sts: 1,
+    trx: {
+      id: "TRXJF0300080",
+      alamatAntar: "Kudaile, 52413, Slawi, Tegal, Central Java, Indonesia",
+      comment: null,
+      detailAntar: "",
+      job: "DRIVER OTW MERCHANT",
+      ketPesanan: "",
+      kodepesanan: "JBF0300080",
+      latAntar: "-6.975225",
+      lonAntar: "109.1291609",
+      notif: 0,
+      star: 0,
+      status: "PROSES",
+      ongkir: 5000,
+      pajak: 0,
+      total: 11000,
+      grandtotal: 16000,
+      id_driver: "sim-123871238123123",
+      pembeli: "1614337831601",
+      promo: null,
+      merchant: "mc0002",
+      pin: null,
+      timestamp: "2021-03-23T10:36:22.000+0000",
+      latAsal: "-6.8572739",
+      lonAsal: null,
+      alamatAsal: null,
+      keterangan: null,
+      type: "FOOD",
+      idlayanan: null,
     },
-    {
-      "iconName": "restaurant",
-      "jobName": "preparing"
-    }
-  ]
-}]
+    detil: [
+      {
+        idtrxdetil: "161649578170731601",
+        harga: 11000,
+        idxtra: null,
+        hargaxtra: 0,
+        jumlah: 1,
+        star: null,
+        total: 0,
+        totalsetelahpajak: 0,
+        idbarang: "10045",
+        nmBarang: "10045",
+        idtrx: "TRXJF0300080",
+      },
+    ],
+    stsJob: [
+      {
+        iconName: "done-all",
+        jobName: "order_placed",
+      },
+      {
+        iconName: "restaurant",
+        jobName: "preparing",
+      },
+    ],
+  },
+];
 
 const slog = (data) => {
   data = data ?? {};
-  let sender = 'anonim';
-  let receiver = 'unknown';
+  let sender = "anonim";
+  let receiver = "unknown";
   let timestamp = moment().format("Y:MM:DD HH:mm:ss");
   if (data?._id != null) {
     receiver = data?._id;
@@ -562,13 +599,15 @@ const slog = (data) => {
   if (data?.senderIdrs != null) {
     receiver = data?.senderIdrs;
   }
-  console.log(`Socket connection Success : ${timestamp} | from : ${sender} to : ${receiver}`);
-}
+  console.log(
+    `Socket connection Success : ${timestamp} | from : ${sender} to : ${receiver}`
+  );
+};
 
 const slogf = (data) => {
   data = data ?? {};
-  let sender = 'anonim';
-  let receiver = 'unknown';
+  let sender = "anonim";
+  let receiver = "unknown";
   let timestamp = moment().format("Y:MM:DD HH:mm:ss");
   if (data?._id != null) {
     receiver = data?._id;
@@ -579,5 +618,7 @@ const slogf = (data) => {
   if (data?.senderIdrs != null) {
     receiver = data?.senderIdrs;
   }
-  console.log(`Socket connection Failed : ${timestamp} | from : ${sender} to : ${receiver}`);
-}
+  console.log(
+    `Socket connection Failed : ${timestamp} | from : ${sender} to : ${receiver}`
+  );
+};
