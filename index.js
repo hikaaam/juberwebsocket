@@ -1,13 +1,20 @@
 const app = require("express")();
 const router = require("express").Router();
-const http = require("http").createServer(app);
+const https = require("https");
+const fs = require("fs");
+var ssl_op = {
+  key: fs.readFileSync('./ssl_config/server.key'),
+  cert: fs.readFileSync('./ssl_config/server.crt'),
+  ca: fs.readFileSync('./ssl_config/ca.crt')
+}
+const http = https.createServer(ssl_op, app);
+const Logger = require('./middleware/Logger');
 const io = require("socket.io")(http, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
   },
 });
-var https = require("https");
 var bodyParser = require("body-parser");
 var jsonParser = bodyParser.json();
 var admin = require("firebase-admin");
@@ -84,6 +91,11 @@ async function sendFcmMessage(fcmMessage) {
     request.on("error", function (err) {
       console.log("Unable to send message to Firebase");
       console.log(err);
+      respon_ = {
+        "success": false,
+        "msg": err.message,
+      }
+      resolve(respon_)
       return err;
     });
     request.write(JSON.stringify(fcmMessage));
@@ -124,6 +136,7 @@ app.use(
     extended: true,
   })
 );
+app.use(Logger);
 app.use(bodyParser.json());
 app.all("/", router);
 app.all("/sendto/driver", router);
@@ -152,37 +165,37 @@ router.post("/notif", async (req, res) => {
 
   data = req.body;
   console.log(data)
-  console.log(data.data.type)
+  // console.log(data.data.type)
   if (data.judul == undefined) {
-    res.send({
+    res.status(401).send({
       "success": false,
       "errMsg": "judul harus di isi"
     })
     return;
   }
   else if (data.msg == undefined) {
-    res.send({
+    res.status(401).send({
       "success": false,
       "errMsg": "msg harus di isi"
     })
     return;
   }
   else if (data.data == undefined) {
-    res.send({
+    res.status(401).send({
       "success": false,
       "errMsg": "data harus di isi"
     })
     return;
   }
   else if (data.data.type == undefined) {
-    res.send({
+    res.status(401).send({
       "success": false,
       "errMsg": "data.type harus di isi"
     })
     return;
   }
   else if (data.data.service == undefined) {
-    res.send({
+    res.status(401).send({
       "success": false,
       "errMsg": "data.service harus di isi"
     })
@@ -199,9 +212,13 @@ router.post("/notif", async (req, res) => {
       picture: "",
       data: data.data,
     });
-    res.send(resp)
+    if (!resp.success) {
+      res.status(500).json(resp);
+      return
+    }
+    res.send(resp);
   } catch (error) {
-    res.send({
+    res.status(500).send({
       "success": false,
       "errMsg": error
     });
@@ -245,7 +262,7 @@ io.on("connection", (socket) => {
         }
       }
     } else {
-      console.log(unread);
+      // console.log(unread);
     }
   };
   console.log("new user connected");
@@ -258,9 +275,9 @@ io.on("connection", (socket) => {
       }
       socket.nickname = data;
       clients[socket.nickname] = socket;
-      console.log("u are here bro");
+      // console.log("u are here bro");
     } else {
-      console.log(unread);
+      // console.log(unread);
       socket.nickname = data;
       clients[socket.nickname] = socket;
     }
@@ -337,23 +354,19 @@ io.on("connection", (socket) => {
   socket.on("driverLocation", function (data) {
     var id = data._id;
     if (clients.hasOwnProperty(id)) {
+      slog(data)
       io.to(clients[id]["id"]).emit("driverLocation", data);
     } else {
+      slogf(data)
       console.log("target offline");
     }
   });
   socket.on("broadcastdriver", function (data) {
     // console.log(data);
-    let dataPesan = buatData(
-      "",
-      "Order baru",
-      "Anda memiliki satu order baru",
-      "",
-      data,
-      "driver"
-    );
-    console.log(dataPesan);
-    sendFcmMessage(dataPesan);
+    slog(data)
+    // socket.emit("broadcastdriver", data);
+    socket.broadcast.emit("broadcastdriver", data)
+    // io.emit("broadcastdriver", data)
   });
   socket.on("getDriver", function (data) {
     sendMultipe(data.tokens, {
@@ -534,3 +547,37 @@ const data_dummy = [{
     }
   ]
 }]
+
+const slog = (data) => {
+  data = data ?? {};
+  let sender = 'anonim';
+  let receiver = 'unknown';
+  let timestamp = moment().format("Y:MM:DD HH:mm:ss");
+  if (data?._id != null) {
+    receiver = data?._id;
+  }
+  if (data?.idrs != null) {
+    sender = data?.idrs;
+  }
+  if (data?.senderIdrs != null) {
+    receiver = data?.senderIdrs;
+  }
+  console.log(`Socket connection Success : ${timestamp} | from : ${sender} to : ${receiver}`);
+}
+
+const slogf = (data) => {
+  data = data ?? {};
+  let sender = 'anonim';
+  let receiver = 'unknown';
+  let timestamp = moment().format("Y:MM:DD HH:mm:ss");
+  if (data?._id != null) {
+    receiver = data?._id;
+  }
+  if (data?.idrs != null) {
+    sender = data?.idrs;
+  }
+  if (data?.senderIdrs != null) {
+    receiver = data?.senderIdrs;
+  }
+  console.log(`Socket connection Failed : ${timestamp} | from : ${sender} to : ${receiver}`);
+}
