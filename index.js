@@ -7,8 +7,8 @@ var ssl_op = {
   cert: fs.readFileSync("./ssl_config/server.crt"),
   ca: fs.readFileSync("./ssl_config/ca.crt"),
 };
-// const http = https.createServer(ssl_op, app);
-const http = require("http").createServer(app);
+const http = https.createServer(ssl_op, app);
+// const http = require("http").createServer(app);
 const Logger = require("./middleware/Logger");
 const io = require("socket.io")(http, {
   cors: {
@@ -177,6 +177,7 @@ router.post("/sendto/driver", (req, res) => {
     res.send(false);
   }
 });
+
 router.post("/notif/topic", async (req, res) => {
   try {
     let data = req.body;
